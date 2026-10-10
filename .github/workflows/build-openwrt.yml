@@ -47,6 +47,13 @@ jobs:
           grep -qx 'CONFIG_PACKAGE_luci-i18n-passwall2-zh-cn=y' .config
           grep -q '^src-git passwall_packages ' feeds.conf.default
           grep -q '^src-git passwall2 ' feeds.conf.default
+          if grep -Eq '^CONFIG_PACKAGE_(luci-app-ssr-plus|luci-i18n-ssr-plus-zh-cn|qBittorrent-static|vsftpd-alt)=y$' .config; then
+            echo 'Obsolete proxy app or conflicting FTP/qBittorrent variant selected' >&2
+            exit 1
+          fi
+          for package in luci-app-qbittorrent qbittorrent luci-app-vsftpd vsftpd; do
+            grep -qx "CONFIG_PACKAGE_${package}=y" .config
+          done
           if grep -Eq '^CONFIG_PACKAGE_(luci-app-passwall|luci-app-smartdns|smartdns|luci-app-zerotier|zerotier)=y$' .config; then
             echo 'Unexpected old PassWall, SmartDNS or ZeroTier package enabled' >&2
             exit 1
@@ -115,6 +122,16 @@ jobs:
             echo 'An excluded package reappeared after make defconfig' >&2
             exit 1
           fi
+          if grep -Eq '^CONFIG_PACKAGE_(luci-app-ssr-plus|luci-i18n-ssr-plus-zh-cn|qBittorrent-static|vsftpd-alt)=y$' .config; then
+            echo 'A known conflicting package was reselected by make defconfig' >&2
+            exit 1
+          fi
+          for package in luci-app-qbittorrent qbittorrent luci-app-vsftpd vsftpd; do
+            if ! grep -qx "CONFIG_PACKAGE_${package}=y" .config; then
+              echo "::error::Required selected package ${package} is unavailable after make defconfig"
+              exit 1
+            fi
+          done
           grep -qx 'CONFIG_TARGET_x86_64=y' .config
           grep -qx 'CONFIG_GRUB_EFI_IMAGES=y' .config
 

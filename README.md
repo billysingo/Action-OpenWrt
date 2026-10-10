@@ -7,9 +7,13 @@
 - **源码**：Lean LEDE `master`
 - **目标**：x86_64 Generic，EFI；保留 EXT4/SquashFS 镜像输出配置
 - **代理插件**：PassWall2 + 中文界面（首轮默认 Xray 核心）
-- **其他**：暂时保留 SSR Plus、MosDNS 关联选项以及原来其它可用的插件选择
-- **明确移除**：PassWall 1、SmartDNS、ZeroTier
+- **其他**：移除存在缺失依赖的 SSR Plus，保留其它可兼容的插件选择；MosDNS 相关独立选项仍按原配置
+- **明确移除**：PassWall 1、SSR Plus、SmartDNS、ZeroTier
 - **基础配置**：仓库 `.config`（迁移后的旧配置）；Feeds：`feeds.conf.default`
+
+## 2026-10-11 首次云编译修复
+
+Run #105 用时约 3 小时 41 分，在最终 package/install 阶段报错。原因是 SSR Plus 缺失 shadowsocks-libev-ss-server、vsftpd 和 vsftpd-alt 重复安装，以及 qbittorrent 和 qBittorrent-static 重复安装。现在选择与 LuCI 插件依赖一致的 vsftpd、动态 qbittorrent，移除旧 SSR Plus（PassWall2 + Xray 已成功安装），并在 make defconfig 后检查这些冲突是否再次出现。该修复仍需完整云编译验证。
 
 ## 使用方法
 
