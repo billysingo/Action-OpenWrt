@@ -1,44 +1,42 @@
-**English** | [中文](https://p3terx.com/archives/build-openwrt-with-github-actions.html)
+# LEDE x86_64 EFI — GitHub Actions
 
-# Actions-OpenWrt
+基于 [coolsnowwolf/lede](https://github.com/coolsnowwolf/lede) 的定制 x86_64 软路由固件编译仓库，使用 GitHub 托管的 Ubuntu Runner 进行编译。
 
-[![LICENSE](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square&label=LICENSE)](https://github.com/P3TERX/Actions-OpenWrt/blob/master/LICENSE)
-![GitHub Stars](https://img.shields.io/github/stars/P3TERX/Actions-OpenWrt.svg?style=flat-square&label=Stars&logo=github)
-![GitHub Forks](https://img.shields.io/github/forks/P3TERX/Actions-OpenWrt.svg?style=flat-square&label=Forks&logo=github)
+## 当前编译配置
 
-A template for building OpenWrt with GitHub Actions
+- **源码**：Lean LEDE `master`
+- **目标**：x86_64 Generic，EFI；保留 EXT4/SquashFS 镜像输出配置
+- **代理插件**：PassWall2 + 中文界面（首轮默认 Xray 核心）
+- **其他**：暂时保留 SSR Plus、MosDNS 关联选项以及原来其它可用的插件选择
+- **明确移除**：PassWall 1、SmartDNS、ZeroTier
+- **基础配置**：仓库 `.config`（迁移后的旧配置）；Feeds：`feeds.conf.default`
 
-## Usage
+## 使用方法
 
-- Click the [Use this template](https://github.com/P3TERX/Actions-OpenWrt/generate) button to create a new repository.
-- Generate `.config` files using [Lean's OpenWrt](https://github.com/coolsnowwolf/lede) source code. ( You can change it through environment variables in the workflow file. )
-- Push `.config` file to the GitHub repository.
-- Select `Build OpenWrt` on the Actions page.
-- Click the `Run workflow` button.
-- When the build is complete, click the `Artifacts` button in the upper right corner of the Actions page to download the binaries.
+1. 打开 [Actions / Build OpenWrt (LEDE)](../../actions/workflows/build-openwrt.yml)。
+2. 点击 **Run workflow**，选择分支。
+3. **测试分支**：选择 `fix/restore-lede-passwall2-20261010`，启动完整编译但**不会发布 Release**，可在该次运行的 Artifacts 下载测试结果。
+4. **正式发布**：PR 合并至 `main` 后，选择 `main` 启动并保持 `publish_release=true`，编译通过、检查产生 EFI 镜像后自动创建 [Release](../../releases)。
+5. `Update Checker` 默认仅手动启动；确认构建稳定后再启用其定时检查。检测到新的 LEDE 提交时通过 `repository_dispatch` 触发正式编译。
 
-## Tips
+## 兼容性及故障定位
 
-- It may take a long time to create a `.config` file and build the OpenWrt firmware. Thus, before create repository to build your own firmware, you may check out if others have already built it which meet your needs by simply [search `Actions-Openwrt` in GitHub](https://github.com/search?q=Actions-openwrt).
-- Add some meta info of your built firmware (such as firmware architecture and installed packages) to your repository introduction, this will save others' time.
+- 原来的 `ubuntu-20.04`、`git.io/depends-ubuntu-2004`、`::set-output` 和旧 Artifact 上传方式已移除。
+- PR 默认运行轻量配置与脚本检查，避免每次改动都消耗数小时编译额度。
+- Actions 在 `make defconfig` 后验证 PassWall2、中文包和 Xray 核心仍然启用；如果 Feeds 更新后某个包不再提供，构建会**尽早报错**，而不是发布残缺固件。
+- 构建的 Job Summary 会列出原配置中未保留下来的部分软件包选项，便于后续适配；**其它遗留插件并未全部验证兼容**。
+- 自动 Release 仅允许 `main` 分支。不会自动清理旧 Releases 或工作流记录，避免诊断信息被删除。
+- 每次编译使用最新的上游 LEDE 与 Feeds，可能因上游变化产生新问题。固件升级前先核对包清单、磁盘布局及网络设置，并做好备份。
+- GitHub 托管 Job 存在执行时间限制，大量第三方插件可能导致超过编译时限。
 
-## Credits
+## 主要文件
 
-- [Microsoft Azure](https://azure.microsoft.com)
-- [GitHub Actions](https://github.com/features/actions)
-- [OpenWrt](https://github.com/openwrt/openwrt)
-- [Lean's OpenWrt](https://github.com/coolsnowwolf/lede)
-- [tmate](https://github.com/tmate-io/tmate)
-- [mxschmitt/action-tmate](https://github.com/mxschmitt/action-tmate)
-- [csexton/debugger-action](https://github.com/csexton/debugger-action)
-- [Cowtransfer](https://cowtransfer.com)
-- [WeTransfer](https://wetransfer.com/)
-- [Mikubill/transfer](https://github.com/Mikubill/transfer)
-- [softprops/action-gh-release](https://github.com/softprops/action-gh-release)
-- [ActionsRML/delete-workflow-runs](https://github.com/ActionsRML/delete-workflow-runs)
-- [dev-drprasad/delete-older-releases](https://github.com/dev-drprasad/delete-older-releases)
-- [peter-evans/repository-dispatch](https://github.com/peter-evans/repository-dispatch)
+| 文件 | 用途 |
+| --- | --- |
+| `.github/workflows/build-openwrt.yml` | 构建、验证、Artifact 上传和 Release |
+| `.github/workflows/update-checker.yml` | 上游变化检测（默认手动） |
+| `.config` | 固件与软件包选择 |
+| `feeds.conf.default` | 源码及第三方包仓库 |
+| `diy-part1.sh` / `diy-part2.sh` | 可选自定义脚本 |
 
-## License
-
-[MIT](https://github.com/P3TERX/Actions-OpenWrt/blob/main/LICENSE) © [**P3TERX**](https://p3terx.com)
+项目的 Actions 编译方式参考了 [P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt)；LEDE 项目与第三方软件包各自遵循其上游许可证。
