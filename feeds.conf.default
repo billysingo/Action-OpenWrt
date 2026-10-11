@@ -1,9 +1,8 @@
 # Follow current Lean LEDE baseline while preferring PassWall2 dependencies.
-# Keep proxy package feeds ahead of packages/helloworld to avoid older duplicate cores.
+# PassWall2 and its dependency feed are kept; legacy helloworld (SSR Plus) is removed.
 src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main
 src-git passwall2 https://github.com/Openwrt-Passwall/openwrt-passwall2.git;main
 src-git packages https://github.com/coolsnowwolf/packages.git
 src-git luci https://github.com/coolsnowwolf/luci.git;openwrt-25.12
 src-git routing https://github.com/coolsnowwolf/routing.git
 src-git telephony https://github.com/coolsnowwolf/telephony.git
-src-git helloworld https://github.com/fw876/helloworld.git;main

@@ -6,14 +6,26 @@
 
 - **源码**：Lean LEDE `master`
 - **目标**：x86_64 Generic，EFI；保留 EXT4/SquashFS 镜像输出配置
-- **代理插件**：PassWall2 + 中文界面（首轮默认 Xray 核心）
-- **其他**：移除存在缺失依赖的 SSR Plus，保留其它可兼容的插件选择；MosDNS 相关独立选项仍按原配置
-- **明确移除**：PassWall 1、SSR Plus、SmartDNS、ZeroTier
+- **代理插件**：PassWall2 + 中文界面 + sing-box（AnyTLS 主核心）
+- **其他**：保留 qBittorrent、Aria2、DDNS、WireGuard、Nlbwmon、WOL、TTYD、Argon，暂留 Samba4、DiskMan 以及原有 FRPC / UPnP 配置
+- **明确移除**：PassWall 1、SSR Plus、SmartDNS、ZeroTier、网易云解锁、Transmission、aMule、Adbyby、TurboACC、XLNetAcc、旧代理核心等
 - **基础配置**：仓库 `.config`（迁移后的旧配置）；Feeds：`feeds.conf.default`
 
 ## 2026-10-11 首次云编译修复
 
-Run #105 用时约 3 小时 41 分，在最终 package/install 阶段报错。原因是 SSR Plus 缺失 shadowsocks-libev-ss-server、vsftpd 和 vsftpd-alt 重复安装，以及 qbittorrent 和 qBittorrent-static 重复安装。现在选择与 LuCI 插件依赖一致的 vsftpd、动态 qbittorrent，移除旧 SSR Plus（PassWall2 + Xray 已成功安装），并在 make defconfig 后检查这些冲突是否再次出现。该修复仍需完整云编译验证。
+Run #105 用时约 3 小时 41 分，在最终 package/install 阶段报错。原因是 SSR Plus 缺失 shadowsocks-libev-ss-server、vsftpd 和 vsftpd-alt 重复安装，以及 qbittorrent 和 qBittorrent-static 重复安装。现在选择与 LuCI 插件依赖一致的 vsftpd、动态 qbittorrent，移除旧 SSR Plus（PassWall2 + Xray 已成功安装），并在 make defconfig 后检查这些冲突是否再次出现。第二轮 Run #107 已成功生成 EXT4/SquashFS EFI 固件及 Artifact。
+
+## 2026-10-11 AnyTLS 和精简增强配置（第三轮待验证）
+
+- **AnyTLS**：PassWall2 官方通过 sing-box 支持 AnyTLS。基础核心选为 `luci-app-passwall2_Basic_Core_SingBox`，明确安装 `sing-box`；关闭 Xray 和默认自动选择的其他可选代理核心。保留原有 `iptables` 透明代理模式，不迁移 firewall4。
+- **计划移除**：网易云解锁 Go 后端、语言包及旧默认标记，SSR Plus、Adbyby Plus、Shadowsocks-libev 独立 UI、Trojan 系列、V2Ray、Xray、旧测速加速/清内存插件，以及 Transmission、aMule、百度网盘 Web、FTP、IPSec/StrongSwan 等不在本次精简配置中的服务。
+- **计划保留**：qBittorrent、Aria2、DDNS、WireGuard、Nlbwmon、WOL、TTYD、Argon；Samba4、DiskMan、FRPC、UPnP 暂时不删，避免影响原有存储和远程使用方式。
+- **计划新增**：LuCI Statistics（collectd/rrdtool 依赖）和 LuCI SQM（CAKE）。**SQM 不会自动优化网速，部署后需按实际上下行带宽调参；与流量硬件/软件 offload 同时使用可能导致队列管理失效。**
+- **未纳入本轮**：AdGuard Home、Nikki / Momo 和 firewall4。防止 DNS 与防火墙两项架构调整同时发生。
+- **清理 Feeds**：删除单独的 `helloworld` Feed，保留 PassWall2 / Passwall packages / packages / luci / routing / telephony。若上游依赖链有变化，以下一次 `make defconfig` 的选项检查结果为准。
+- **增加验证**：除 `make defconfig` 检查外，正式构建完成还会校验固件 `manifest` 确实有 sing-box、PassWall2、Statistics 和 SQM 且没有被移除的旧代理核心。
+
+注意：此第三轮方案尚未执行完整固件编译；Run #107 的成功结论仅适用于之前的 Xray 配置。
 
 ## 使用方法
 
@@ -27,7 +39,7 @@ Run #105 用时约 3 小时 41 分，在最终 package/install 阶段报错。�
 
 - 原来的 `ubuntu-20.04`、`git.io/depends-ubuntu-2004`、`::set-output` 和旧 Artifact 上传方式已移除。
 - PR 默认运行轻量配置与脚本检查，避免每次改动都消耗数小时编译额度。
-- Actions 在 `make defconfig` 后验证 PassWall2、中文包和 Xray 核心仍然启用；如果 Feeds 更新后某个包不再提供，构建会**尽早报错**，而不是发布残缺固件。
+- Actions 在 `make defconfig` 后验证 PassWall2、中文包、sing-box、Statistics 和 SQM 仍然启用；如果 Feeds 更新后某个包不再提供，构建会**尽早报错**，而不是发布残缺固件。
 - 构建的 Job Summary 会列出原配置中未保留下来的部分软件包选项，便于后续适配；**其它遗留插件并未全部验证兼容**。
 - 自动 Release 仅允许 `main` 分支。不会自动清理旧 Releases 或工作流记录，避免诊断信息被删除。
 - 每次编译使用最新的上游 LEDE 与 Feeds，可能因上游变化产生新问题。固件升级前先核对包清单、磁盘布局及网络设置，并做好备份。
