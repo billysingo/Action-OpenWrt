@@ -8,6 +8,14 @@ on:
         type: boolean
         required: false
         default: true
+  push:
+    branches: [main]
+    paths:
+      - '.config'
+      - 'feeds.conf.default'
+      - 'diy-part1.sh'
+      - 'diy-part2.sh'
+      - '.github/workflows/build-openwrt.yml'
   repository_dispatch:
     types: [source-code-update]
   pull_request:
@@ -64,7 +72,7 @@ jobs:
   build:
     name: Compile x86_64 EFI firmware
     needs: preflight
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && (github.event_name != 'push' || contains(github.event.head_commit.message, '[publish-release]'))
     runs-on: ubuntu-22.04
     timeout-minutes: 360
     permissions:
@@ -190,7 +198,7 @@ jobs:
 
       - name: Generate release metadata
         id: release
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'repository_dispatch' || inputs.publish_release == true)
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'repository_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-release]')) || inputs.publish_release == true)
         shell: bash
         run: |
           set -euo pipefail

@@ -27,12 +27,18 @@ Run #105 用时约 3 小时 41 分，在最终 package/install 阶段报错。�
 
 注意：此第三轮方案尚未执行完整固件编译；Run #107 的成功结论仅适用于当时的 Xray 单核心配置。
 
+## 2026-10-11 正式发布触发策略
+
+- 针对本次成功的 Run #110 配置，合并 PR 时使用带 `[publish-release]` 的 Merge Commit 标题，触发 main 分支的一次正式固件构建和 Release 上传。
+- `main` 分支未来普通提交仅执行 preflight，不会每次提交就重新构建或创建 Release。需要自动发布时，在提交标题包含 `[publish-release]`，或手动调度 `publish_release=true`。
+- Release 只在完整构建、manifest 软件包核验及 EFI 镜像验证成功后执行。若构建失败则不会发布固件。
+
 ## 使用方法
 
 1. 打开 [Actions / Build OpenWrt (LEDE)](../../actions/workflows/build-openwrt.yml)。
 2. 点击 **Run workflow**，选择分支。
 3. **测试分支**：选择 `fix/restore-lede-passwall2-20261010`，启动完整编译但**不会发布 Release**，可在该次运行的 Artifacts 下载测试结果。
-4. **正式发布**：PR 合并至 `main` 后，选择 `main` 启动并保持 `publish_release=true`，编译通过、检查产生 EFI 镜像后自动创建 [Release](../../releases)。
+4. **正式发布**：默认仍可在 `main` 手动启动并保持 `publish_release=true`；此外，合并到 `main` 的提交标题若包含 `[publish-release]`，且本次推送涉及固件配置或构建工作流，则自动完整编译、通过校验后创建 [Release](../../releases)。其他普通推送只运行轻量检查，不自动发布。
 5. `Update Checker` 默认仅手动启动；确认构建稳定后再启用其定时检查。检测到新的 LEDE 提交时通过 `repository_dispatch` 触发正式编译。
 
 ## 兼容性及故障定位
