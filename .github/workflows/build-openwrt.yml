@@ -45,14 +45,14 @@ jobs:
           grep -qx 'CONFIG_GRUB_EFI_IMAGES=y' .config
           grep -qx 'CONFIG_PACKAGE_luci-app-passwall2=y' .config
           grep -qx 'CONFIG_PACKAGE_luci-i18n-passwall2-zh-cn=y' .config
-          grep -qx 'CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y' .config
+          grep -qx 'CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_All=y' .config
           grep -qx 'CONFIG_PACKAGE_luci-app-passwall2_Iptables_Transparent_Proxy=y' .config
-          for package in sing-box luci-app-statistics luci-app-sqm luci-app-qbittorrent qbittorrent; do
+          for package in sing-box xray-core tailscale luci-app-tailscale-community luci-i18n-tailscale-community-zh-cn luci-app-statistics luci-app-sqm luci-app-qbittorrent qbittorrent; do
             grep -qx "CONFIG_PACKAGE_${package}=y" .config
           done
           grep -q '^src-git passwall_packages ' feeds.conf.default
           grep -q '^src-git passwall2 ' feeds.conf.default
-          if grep -Eq '^CONFIG_PACKAGE_(luci-app-ssr-plus|luci-i18n-ssr-plus-zh-cn|qBittorrent-static|vsftpd-alt|luci-app-vsftpd|luci-app-transmission|luci-app-adbyby-plus|luci-app-unblockmusic|UnblockNeteaseMusic-Go|luci-app-turboacc|xray-core|trojan|trojan-go|v2ray-core)=y$' .config; then
+          if grep -Eq '^CONFIG_PACKAGE_(luci-app-ssr-plus|luci-i18n-ssr-plus-zh-cn|qBittorrent-static|vsftpd-alt|luci-app-vsftpd|luci-app-transmission|luci-app-adbyby-plus|luci-app-unblockmusic|UnblockNeteaseMusic-Go|luci-app-turboacc|trojan|trojan-go|v2ray-core)=y$' .config; then
             echo 'Obsolete proxy app or conflicting FTP/qBittorrent variant selected' >&2
             exit 1
           fi
@@ -114,7 +114,7 @@ jobs:
           make defconfig
           echo '## Dropped legacy package selections (if any)' >> "$GITHUB_STEP_SUMMARY"
           comm -23             <(grep -E '^CONFIG_PACKAGE_.*=y$' .config.requested | sort)             <(grep -E '^CONFIG_PACKAGE_.*=y$' .config | sort)             | head -80 >> "$GITHUB_STEP_SUMMARY" || true
-          for package in luci-app-passwall2 luci-i18n-passwall2-zh-cn sing-box luci-app-statistics luci-i18n-statistics-zh-cn luci-app-sqm luci-i18n-sqm-zh-cn luci-app-qbittorrent qbittorrent; do
+          for package in luci-app-passwall2 luci-i18n-passwall2-zh-cn sing-box xray-core tailscale luci-app-tailscale-community luci-i18n-tailscale-community-zh-cn luci-app-statistics luci-i18n-statistics-zh-cn luci-app-sqm luci-i18n-sqm-zh-cn luci-app-qbittorrent qbittorrent; do
             if ! grep -qx "CONFIG_PACKAGE_${package}=y" .config; then
               echo "::error::Required package ${package} is unavailable after make defconfig"
               exit 1
@@ -124,11 +124,11 @@ jobs:
             echo 'An excluded package reappeared after make defconfig' >&2
             exit 1
           fi
-          if grep -Eq '^CONFIG_PACKAGE_(luci-app-ssr-plus|luci-i18n-ssr-plus-zh-cn|qBittorrent-static|vsftpd-alt|luci-app-vsftpd|luci-app-transmission|luci-app-adbyby-plus|luci-app-unblockmusic|UnblockNeteaseMusic-Go|luci-app-turboacc|xray-core|trojan|trojan-go|v2ray-core)=y$' .config; then
+          if grep -Eq '^CONFIG_PACKAGE_(luci-app-ssr-plus|luci-i18n-ssr-plus-zh-cn|qBittorrent-static|vsftpd-alt|luci-app-vsftpd|luci-app-transmission|luci-app-adbyby-plus|luci-app-unblockmusic|UnblockNeteaseMusic-Go|luci-app-turboacc|trojan|trojan-go|v2ray-core)=y$' .config; then
             echo 'A known conflicting package was reselected by make defconfig' >&2
             exit 1
           fi
-          grep -qx 'CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_SingBox=y' .config
+          grep -qx 'CONFIG_PACKAGE_luci-app-passwall2_Basic_Core_All=y' .config
           grep -qx 'CONFIG_PACKAGE_luci-app-passwall2_Iptables_Transparent_Proxy=y' .config
           grep -qx 'CONFIG_TARGET_x86_64=y' .config
           grep -qx 'CONFIG_GRUB_EFI_IMAGES=y' .config
@@ -161,18 +161,18 @@ jobs:
           test -f "$firmware_dir/sha256sums"
           test -f "$firmware_dir/openwrt-x86-64-generic.manifest"
           manifest="$firmware_dir/openwrt-x86-64-generic.manifest"
-          for package in luci-app-passwall2 luci-i18n-passwall2-zh-cn sing-box luci-app-statistics luci-app-sqm luci-app-qbittorrent qbittorrent; do
+          for package in luci-app-passwall2 luci-i18n-passwall2-zh-cn sing-box xray-core tailscale luci-app-tailscale-community luci-i18n-tailscale-community-zh-cn luci-app-statistics luci-app-sqm luci-app-qbittorrent qbittorrent; do
             if ! grep -Eq "^${package}[[:space:]]" "$manifest"; then
               echo "::error::Required package ${package} missing from final firmware manifest"
               exit 1
             fi
           done
-          if grep -Eq '^(luci-app-ssr-plus|UnblockNeteaseMusic-Go|luci-app-transmission|xray-core|luci-app-adbyby-plus|trojan|v2ray-core)[[:space:]]' "$manifest"; then
+          if grep -Eq '^(luci-app-ssr-plus|UnblockNeteaseMusic-Go|luci-app-transmission|luci-app-adbyby-plus|trojan|v2ray-core)[[:space:]]' "$manifest"; then
             echo "::error::A removed package was installed into the firmware"
             exit 1
           fi
           echo "## Verified manifest packages" >> "$GITHUB_STEP_SUMMARY"
-          for package in luci-app-passwall2 sing-box luci-app-statistics luci-app-sqm qbittorrent; do
+          for package in luci-app-passwall2 sing-box xray-core tailscale luci-app-tailscale-community luci-app-statistics luci-app-sqm qbittorrent; do
             grep -E "^${package}[[:space:]]" "$manifest" >> "$GITHUB_STEP_SUMMARY"
           done
           rm -rf "$firmware_dir/packages"
@@ -197,7 +197,7 @@ jobs:
           tag="$(TZ=Asia/Shanghai date +'%Y.%m.%d-%H%M')-r$GITHUB_RUN_NUMBER"
           echo "release_tag=$tag" >> "$GITHUB_OUTPUT"
           lede_sha="$(git -C openwrt rev-parse HEAD)"
-          printf 'LEDE master: %s\nLEDE commit: %s\nTarget: x86_64 EFI\nProxy UI: PassWall2 (sing-box, AnyTLS)\nExcluded: PassWall 1, SSR Plus, SmartDNS, ZeroTier, UnblockNeteaseMusic, Xray\n'             "$REPO_URL" "$lede_sha" > release.txt
+          printf 'LEDE master: %s\nLEDE commit: %s\nTarget: x86_64 EFI\nProxy UI: PassWall2 (Xray + sing-box / AnyTLS)\nVPN: Tailscale + LuCI\nExcluded: PassWall 1, SSR Plus, SmartDNS, ZeroTier, UnblockNeteaseMusic\n'             "$REPO_URL" "$lede_sha" > release.txt
 
       - name: Publish GitHub release
         if: steps.release.outcome == 'success'

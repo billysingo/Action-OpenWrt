@@ -6,9 +6,9 @@
 
 - **源码**：Lean LEDE `master`
 - **目标**：x86_64 Generic，EFI；保留 EXT4/SquashFS 镜像输出配置
-- **代理插件**：PassWall2 + 中文界面 + sing-box（AnyTLS 主核心）
+- **代理插件**：PassWall2 + 中文界面 + 双核心 Xray、sing-box（AnyTLS）
 - **其他**：保留 qBittorrent、Aria2、DDNS、WireGuard、Nlbwmon、WOL、TTYD、Argon，暂留 Samba4、DiskMan 以及原有 FRPC / UPnP 配置
-- **明确移除**：PassWall 1、SSR Plus、SmartDNS、ZeroTier、网易云解锁、Transmission、aMule、Adbyby、TurboACC、XLNetAcc、旧代理核心等
+- **明确移除**：PassWall 1、SSR Plus、SmartDNS、ZeroTier、网易云解锁、Transmission、aMule、Adbyby、TurboACC、XLNetAcc、多余的独立旧代理程序等
 - **基础配置**：仓库 `.config`（迁移后的旧配置）；Feeds：`feeds.conf.default`
 
 ## 2026-10-11 首次云编译修复
@@ -17,15 +17,15 @@ Run #105 用时约 3 小时 41 分，在最终 package/install 阶段报错。�
 
 ## 2026-10-11 AnyTLS 和精简增强配置（第三轮待验证）
 
-- **AnyTLS**：PassWall2 官方通过 sing-box 支持 AnyTLS。基础核心选为 `luci-app-passwall2_Basic_Core_SingBox`，明确安装 `sing-box`；关闭 Xray 和默认自动选择的其他可选代理核心。保留原有 `iptables` 透明代理模式，不迁移 firewall4。
-- **计划移除**：网易云解锁 Go 后端、语言包及旧默认标记，SSR Plus、Adbyby Plus、Shadowsocks-libev 独立 UI、Trojan 系列、V2Ray、Xray、旧测速加速/清内存插件，以及 Transmission、aMule、百度网盘 Web、FTP、IPSec/StrongSwan 等不在本次精简配置中的服务。
+- **AnyTLS**：PassWall2 官方通过 sing-box 支持 AnyTLS。基础核心选为 `luci-app-passwall2_Basic_Core_All`，**同时编入 `sing-box` 和 `xray-core`**。AnyTLS 节点使用 sing-box，其他支持 Xray 的协议仍可选择 Xray；关闭不必要的第三方独立代理组件。保留原有 `iptables` 透明代理模式，不迁移 firewall4。
+- **计划移除**：网易云解锁 Go 后端、语言包及旧默认标记，SSR Plus、Adbyby Plus、Shadowsocks-libev 独立 UI、独立 Trojan 系列、V2Ray、旧测速加速/清内存插件，以及 Transmission、aMule、百度网盘 Web、FTP、IPSec/StrongSwan 等不在本次精简配置中的服务。
 - **计划保留**：qBittorrent、Aria2、DDNS、WireGuard、Nlbwmon、WOL、TTYD、Argon；Samba4、DiskMan、FRPC、UPnP 暂时不删，避免影响原有存储和远程使用方式。
-- **计划新增**：LuCI Statistics（collectd/rrdtool 依赖）和 LuCI SQM（CAKE）。**SQM 不会自动优化网速，部署后需按实际上下行带宽调参；与流量硬件/软件 offload 同时使用可能导致队列管理失效。**
+- **计划新增**：LuCI Statistics（collectd/rrdtool 依赖）、LuCI SQM（CAKE），以及 Tailscale（含 LuCI 管理界面与中文翻译）。Tailscale 需要设备首次启动后自行登录和授权，并不自动加入任何 Tailnet。**SQM 不会自动优化网速，部署后需按实际上下行带宽调参；与流量硬件/软件 offload 同时使用可能导致队列管理失效。**
 - **未纳入本轮**：AdGuard Home、Nikki / Momo 和 firewall4。防止 DNS 与防火墙两项架构调整同时发生。
 - **清理 Feeds**：删除单独的 `helloworld` Feed，保留 PassWall2 / Passwall packages / packages / luci / routing / telephony。若上游依赖链有变化，以下一次 `make defconfig` 的选项检查结果为准。
-- **增加验证**：除 `make defconfig` 检查外，正式构建完成还会校验固件 `manifest` 确实有 sing-box、PassWall2、Statistics 和 SQM 且没有被移除的旧代理核心。
+- **增加验证**：除 `make defconfig` 检查外，正式构建完成还会校验固件 `manifest` 确实有 sing-box、Xray、Tailscale、PassWall2、Statistics 和 SQM 且没有被移除的旧代理核心。
 
-注意：此第三轮方案尚未执行完整固件编译；Run #107 的成功结论仅适用于之前的 Xray 配置。
+注意：此第三轮方案尚未执行完整固件编译；Run #107 的成功结论仅适用于当时的 Xray 单核心配置。
 
 ## 使用方法
 
